@@ -80,11 +80,17 @@ end
 function HwKeys.setup()
     -- grabbing the keyboard manager    
     if not HwKeys.hwKB then
-        HwKeys.hwKB = sdk.get_managed_singleton("snow.GameKeyboard"):get_field("hardKeyboard") -- getting hardware keyboard manager
+        local GameKeyboard = sdk.get_managed_singleton("snow.GameKeyboard")
+        if GameKeyboard then
+            HwKeys.hwKB = GameKeyboard:get_field("hardKeyboard") -- getting hardware keyboard manager
+        end
     end
     -- grabbing the gamepad manager
     if not HwKeys.hwPad then
-        HwKeys.hwPad = sdk.get_managed_singleton("snow.Pad"):get_field("hard") -- getting hardware keyboard manager
+        local Pad = sdk.get_managed_singleton("snow.Pad")
+        if Pad then
+            HwKeys.hwPad = Pad:get_field("hard") -- getting hardware keyboard manager
+        end
         if HwKeys.hwPad then
             HwKeys.padType = HwKeys.hwPad:call("get_DeviceKindDetails")
             if HwKeys.padType ~= nil then
@@ -100,7 +106,7 @@ function HwKeys.setup()
             end
         end
     end
-
+    return HwKeys.hwKB and HwKeys.hwPad
 end
 
 return HwKeys

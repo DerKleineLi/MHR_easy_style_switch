@@ -1,7 +1,6 @@
 log.info("[easy_style_switch.lua] loaded")
 
 local HwKeys = require("easy_style_switch.HwKeys");
-HwKeys.setup();
 
 -- load config
 local cfg = json.load_file("easy_style_switch_settings.json")
@@ -29,32 +28,14 @@ re.on_config_save(
     end
 )
 
-local player_manager = sdk.get_managed_singleton("snow.player.PlayerManager");
-local gui_manager = sdk.get_managed_singleton("snow.gui.GuiManager");
--- local player_manager_type_def = sdk.find_type_definition("snow.player.PlayerManager");
--- local find_master_player_method = player_manager_type_def:get_method("findMasterPlayer");
-
--- log.debug(master_player:get_type_definition():get_full_name())
--- log.debug(master_player:get_address())
-
--- log.debug(player_replace_atk_myset_holder:get_type_definition():get_full_name())
--- log.debug(player_replace_atk_myset_holder:get_address())
--- local selected_myset_index = player_replace_atk_myset_holder:get_field("_SelectedMysetIndex");
--- log.debug(selected_myset_index:get_address())
--- snow.player.fsm.PlayerFsm2Action.start(via.behaviortree.ActionArg)
--- snow.player.fsm.PlayerFsm2ActionReplaceAtkMysetChange.start(via.behaviortree.ActionArg)
--- local player_fsm2_action_replace_atk_myset_change_type_def = sdk.find_type_definition("snow.player.fsm.PlayerFsm2ActionReplaceAtkMysetChange");
--- local start_method = player_fsm2_action_replace_atk_myset_change_type_def:get_method("start");
--- local PlayerBase = sdk.find_type_definition("snow.player.PlayerBase");
--- local reflectReplaceAtkMyset = PlayerBase:get_method("reflectReplaceAtkMyset");
--- local _ReplaceAtkMysetData = player_replace_atk_myset_holder:get_field("_ReplaceAtkMysetData");
--- local current_equipped_myset_index = guiHud_weaponTechniqueMyset:get_field("currentEquippedMySetIndex");
+-- local player_manager = sdk.get_managed_singleton("snow.player.PlayerManager");
+-- local gui_manager = sdk.get_managed_singleton("snow.gui.GuiManager");
 
 local PlayerReplaceAtkMysetHolder = sdk.find_type_definition("snow.player.PlayerReplaceAtkMysetHolder");
 local changeReplaceAtkMyset = PlayerReplaceAtkMysetHolder:get_method("changeReplaceAtkMyset")
 
 sdk.hook(changeReplaceAtkMyset,function(args)
-    if cfg.disable_move_switch then
+    if cfg.disable_move_switch and cfg.enabled then
         return sdk.PreHookResult.SKIP_ORIGINAL
     else
         return sdk.PreHookResult.CALL_ORIGINAL
@@ -62,7 +43,10 @@ sdk.hook(changeReplaceAtkMyset,function(args)
 end,function(retval) return retval; end)
 
 local function switch_Myset(set_id)
+    local player_manager = sdk.get_managed_singleton("snow.player.PlayerManager");
+    local gui_manager = sdk.get_managed_singleton("snow.gui.GuiManager");
     local master_player = player_manager:call("findMasterPlayer");
+    if not master_player then return end
     local player_replace_atk_myset_holder = master_player:get_field("_ReplaceAtkMysetHolder");
 
     if not set_id then
@@ -88,7 +72,7 @@ local function switch_Myset(set_id)
 end
 
 re.on_frame(function()
-    if cfg.enabled then
+    if cfg.enabled and HwKeys.setup() then
         -- Listening for Anim skip key press
         if (cfg.gamepad_btn > 0 and HwKeys.hwPad:call("andTrg", cfg.gamepad_btn)) or HwKeys.hwKB:call("getTrg", cfg.keyboard_btn) then
             switch_Myset()
@@ -169,11 +153,6 @@ re.on_draw_ui(
 
         local changed, value = imgui.checkbox("Disable move switch", cfg.disable_move_switch)
         if changed then cfg.disable_move_switch = value end
-        
-        -- changed = imgui.button("switch")
-        -- if changed then
-        --     switch_Myset()
-        -- end
 
         if imgui.button("Keyboard switch: " .. HwKeys.KeyboardKeys[cfg.keyboard_btn]) then
             setting_key_flag = 1
@@ -199,13 +178,6 @@ re.on_draw_ui(
             setting_key_flag = 6
         end
 
-        -- changed = imgui.button("debug")
-        -- if changed then
-        --     log.debug(sdk.to_int64(master_player:call("checkWeaponDraw", true)));
-        -- end
-
-        -- changed, value = imgui.slider_int("SetId", cfg.set_id, 0, 1)
-        -- if changed then player_replace_atk_myset_holder:call("setSelectedMysetIndex", value) end
         imgui.tree_pop()
     end
 )
