@@ -14,14 +14,18 @@
 - 推荐设置：关闭动作快捷栏，像但丁一样用十字键切换风格。
 
 ### 开发人员
+
 [Hugo](https://github.com/DerKleineLi)
+
 [Carve Timer Skip and Fast Return](https://www.nexusmods.com/monsterhunterrise/mods/62) by godoakos
 
 ### 已知问题
 参见 issues 。
 
 ### 参与开发
+
 你可以通过开 issue 和 pr 来参与开发。
+
 我在 issues 里提了一些想法并希望得到帮助。
 
 ---
@@ -38,12 +42,16 @@ This mod enables instant scroll-switch.
 - Recommended: disable all action bars and use D-pad to switch styles like Dante.
 
 ### Credits
+
 [Hugo](https://github.com/DerKleineLi)
+
 [Carve Timer Skip and Fast Return](https://www.nexusmods.com/monsterhunterrise/mods/62) by godoakos
 
 ### Known issue
 See issues.
 
 ### Contribution
+
 Feel free to post issues and open prs!
+
 Looking for help to solve problems posted in issue.
