@@ -18,11 +18,11 @@
 [Carve Timer Skip and Fast Return](https://www.nexusmods.com/monsterhunterrise/mods/62) by godoakos
 
 ### 已知问题
-参见 issue 。
+参见 issues 。
 
 ### 参与开发
 你可以通过开 issue 和 pr 来参与开发。
-我在 issue 里提了一些想法并希望得到帮助。
+我在 issues 里提了一些想法并希望得到帮助。
 
 ---
 
@@ -42,7 +42,7 @@ This mod enables instant scroll-switch.
 [Carve Timer Skip and Fast Return](https://www.nexusmods.com/monsterhunterrise/mods/62) by godoakos
 
 ### Known issue
-See issue.
+See issues.
 
 ### Contribution
 Feel free to post issues and open prs!
