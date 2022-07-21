@@ -19,9 +19,9 @@
 
 ### 开发人员
 
-[Hugo](https://github.com/DerKleineLi)
+[Hugo](https://github.com/DerKleineLi) - 主要开发者。
 
-[Carve Timer Skip and Fast Return](https://www.nexusmods.com/monsterhunterrise/mods/62) by godoakos
+[godoakos](https://www.nexusmods.com/monsterhunterrise/users/453968) - 他开发的 [Carve Timer Skip and Fast Return](https://www.nexusmods.com/monsterhunterrise/mods/62) 提供了案件绑定的框架。
 
 ### 已知问题
 
@@ -45,7 +45,7 @@ This mod enables instant scroll-switch. You can also customize a third scroll an
 - Change settings in script generated UI, the supported settings are:
   - Enabled: whether the script functionality is enabled.
   - Disable move switch: whether to disable the default move to switch between scrolls. You can still do the move if set to true.
-  - Key bindings: 按键设置
+  - Key bindings: 
     - Keyboard/Gamepad switch: set the button to switch between red/blue scrolls.
     - Keyboard/Gamepad red/blue: set the button to switch to the red/blue scroll.
     - Keyboard/Gamepad third: set the button to switch to the third scroll.
@@ -55,9 +55,9 @@ This mod enables instant scroll-switch. You can also customize a third scroll an
 
 ### Credits
 
-[Hugo](https://github.com/DerKleineLi)
+[Hugo](https://github.com/DerKleineLi) - creator of this mod and its main contributor.
 
-[Carve Timer Skip and Fast Return](https://www.nexusmods.com/monsterhunterrise/mods/62) by godoakos
+[godoakos](https://www.nexusmods.com/monsterhunterrise/users/453968) - creator of [Carve Timer Skip and Fast Return](https://www.nexusmods.com/monsterhunterrise/mods/62) mod, which provides pattern for key binding.
 
 ### Known issue
 
