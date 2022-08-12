@@ -48,6 +48,9 @@ local changeReplaceAtkMyset = PlayerReplaceAtkMysetHolder:get_method("changeRepl
 local PlayerBase = sdk.find_type_definition("snow.player.PlayerBase");
 local reflectReplaceAtkMyset = PlayerBase:get_method("reflectReplaceAtkMyset");
 
+local setReplaceAtkMyset = PlayerBase:get_method("setReplaceAtkMyset");
+local setReplaceAtkType = PlayerBase:get_method("setReplaceAtkType");
+
 sdk.hook(changeReplaceAtkMyset,function(args)
     if cfg.disable_move_switch and cfg.enabled then
         return sdk.PreHookResult.SKIP_ORIGINAL
@@ -56,13 +59,14 @@ sdk.hook(changeReplaceAtkMyset,function(args)
     end
 end,function(retval) return retval; end)
 
-sdk.hook(reflectReplaceAtkMyset,function(args)
-    if cfg.disable_move_switch and cfg.enabled then
-        return sdk.PreHookResult.SKIP_ORIGINAL
-    else
-        return sdk.PreHookResult.CALL_ORIGINAL
-    end
-end,function(retval) return retval; end)
+-- sdk.hook(reflectReplaceAtkMyset,function(args)
+--     if cfg.disable_move_switch and cfg.enabled then
+--         return sdk.PreHookResult.SKIP_ORIGINAL
+--     else
+--         return sdk.PreHookResult.CALL_ORIGINAL
+--     end
+-- end,function(retval) return retval; end)
+
 
 local function switch_Myset(set_id)
     local player_manager = sdk.get_managed_singleton("snow.player.PlayerManager");
@@ -267,6 +271,12 @@ re.on_draw_ui(
             if changed then cfg.switch_skill_5 = value end
 
             imgui.tree_pop()
+        end
+
+        if imgui.button("debug") then
+            local player_manager = sdk.get_managed_singleton("snow.player.PlayerManager");
+            local master_player = player_manager:call("findMasterPlayer");
+            local boolean = master_player:call("setReplaceAtkMyset")
         end
 
         imgui.tree_pop()
