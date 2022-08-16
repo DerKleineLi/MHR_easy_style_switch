@@ -53,6 +53,7 @@ re.on_config_save(
 -- ##########################################
 local script_myset_id = nil; -- {0, 1, 2} the current action set id, 0 for red scroll, 1 for blue scroll, 2 for the third scroll.
 local buff_id = nil; -- {0, 1} the current gui icon id, related to buff, 0 for red scroll, 1 for blue scroll.
+local hooked = false; -- indicates whether the functions related to hud are hooked.
 
 -- ##########################################
 -- switch function
@@ -174,10 +175,6 @@ end,function(retval) return retval; end)
 -- ##########################################
 
 -- get the default action id
-local SwitchActionSystem = sdk.find_type_definition("snow.data.SwitchActionSystem");
-local getEquippedActionMySetDataList = SwitchActionSystem:get_method("getEquippedActionMySetDataList(snow.data.weapon.WeaponTypes, snow.data.SwitchActionEquipType)");
-local getEquippedActionMySetDataList_args = nil;
-
 local current_weapon = nil;
 local base_0 = nil;
 local base_1 = nil;
@@ -185,30 +182,35 @@ local base_2 = nil;
 local base_3 = nil;
 local base_4 = nil;
 
-sdk.hook(getEquippedActionMySetDataList,function(args) 
-    if cfg.enabled then
-        getEquippedActionMySetDataList_args = args;
-    end
-    return sdk.PreHookResult.CALL_ORIGINAL;
-end,function(retval) 
-    if cfg.enabled and current_weapon ~= sdk.to_int64(getEquippedActionMySetDataList_args[3]) then
-        local mretval = sdk.to_managed_object(retval)
-        local player_manager = sdk.get_managed_singleton("snow.player.PlayerManager");
-        local master_player = player_manager:call("findMasterPlayer");
-        if not master_player then return retval end
-        local player_replace_atk_myset_holder = master_player:get_field("_ReplaceAtkMysetHolder");
-        buff_id = player_replace_atk_myset_holder:call("getSelectedIndex");
-        player_replace_atk_myset_holder:call("setSelectedMysetIndex", sdk.to_int64(getEquippedActionMySetDataList_args[4]));
-        base_0 = mretval[0] - player_replace_atk_myset_holder:call("getReplaceAtkTypeFromMyset",0);
-        base_1 = base_0 + 2;
-        base_2 = mretval[2] - player_replace_atk_myset_holder:call("getReplaceAtkTypeFromMyset",3);
-        base_3 = base_1 + 2;
-        base_4 = base_2 + 3;
-        player_replace_atk_myset_holder:call("setSelectedMysetIndex", buff_id);
-        current_weapon = sdk.to_int64(getEquippedActionMySetDataList_args[3]);
-    end
-    return retval
-end)
+local function hook_getEquippedActionMySetDataList()
+    local SwitchActionSystem = sdk.find_type_definition("snow.data.SwitchActionSystem");
+    local getEquippedActionMySetDataList = SwitchActionSystem:get_method("getEquippedActionMySetDataList(snow.data.weapon.WeaponTypes, snow.data.SwitchActionEquipType)");
+    local getEquippedActionMySetDataList_args = nil;
+    sdk.hook(getEquippedActionMySetDataList,function(args) 
+        if cfg.enabled then
+            getEquippedActionMySetDataList_args = args;
+        end
+        return sdk.PreHookResult.CALL_ORIGINAL;
+    end,function(retval) 
+        if cfg.enabled and current_weapon ~= sdk.to_int64(getEquippedActionMySetDataList_args[3]) then
+            local mretval = sdk.to_managed_object(retval)
+            local player_manager = sdk.get_managed_singleton("snow.player.PlayerManager");
+            local master_player = player_manager:call("findMasterPlayer");
+            if not master_player then return retval end
+            local player_replace_atk_myset_holder = master_player:get_field("_ReplaceAtkMysetHolder");
+            buff_id = player_replace_atk_myset_holder:call("getSelectedIndex");
+            player_replace_atk_myset_holder:call("setSelectedMysetIndex", sdk.to_int64(getEquippedActionMySetDataList_args[4]));
+            base_0 = mretval[0] - player_replace_atk_myset_holder:call("getReplaceAtkTypeFromMyset",0);
+            base_1 = base_0 + 2;
+            base_2 = mretval[2] - player_replace_atk_myset_holder:call("getReplaceAtkTypeFromMyset",3);
+            base_3 = base_1 + 2;
+            base_4 = base_2 + 3;
+            player_replace_atk_myset_holder:call("setSelectedMysetIndex", buff_id);
+            current_weapon = sdk.to_int64(getEquippedActionMySetDataList_args[3]);
+        end
+        return retval
+    end)
+end
 
 -- helper functions
 local function get_corrsponding_action_id_in_third_scroll(action_id)
@@ -247,8 +249,8 @@ local function is_weapon_drawn()
 end
 
 -- show action name in third scroll
-local hud_hooked = false;
-local function hook_hud()
+local function hook_getHUDString()
+    log.debug("hooking hud")
     local DataShortcut = sdk.find_type_definition("snow.data.DataShortcut");
     local getCommandHud = DataShortcut:get_method("getCommandHud(snow.data.DataDef.PlWeaponActionId)");
     local getName = DataShortcut:get_method("getName(snow.data.DataDef.PlWeaponActionId)");
@@ -267,7 +269,6 @@ local function hook_hud()
         end
         return sdk.PreHookResult.CALL_ORIGINAL
     end, function(retval) return retval; end)
-    hud_hooked = true;
 end
 
 
@@ -276,17 +277,23 @@ end
 -- ##########################################
 re.on_frame(function()
     if cfg.enabled and HwKeys.setup() then
-        -- hook hud, moved here to solve compatibility with (skip intro logos)[https://www.nexusmods.com/monsterhunterrise/mods/1209]
-        if not hud_hooked and is_weapon_drawn() then hook_hud() end
-        -- Listening for Anim skip key press
-        if (cfg.gamepad_btn > 0 and HwKeys.hwPad:call("andTrg", cfg.gamepad_btn)) or HwKeys.hwKB:call("getTrg", cfg.keyboard_btn) then
-            switch_Myset()
-        elseif (cfg.gamepad_red > 0 and HwKeys.hwPad:call("andTrg", cfg.gamepad_red)) or HwKeys.hwKB:call("getTrg", cfg.keyboard_red) then
-            switch_Myset(0)
-        elseif (cfg.gamepad_blue > 0 and HwKeys.hwPad:call("andTrg", cfg.gamepad_blue)) or HwKeys.hwKB:call("getTrg", cfg.keyboard_blue) then
-            switch_Myset(1)
-        elseif (cfg.gamepad_third > 0 and HwKeys.hwPad:call("andTrg", cfg.gamepad_third)) or HwKeys.hwKB:call("getTrg", cfg.keyboard_third) then
-            switch_Myset(2)
+
+        if hooked then
+            -- Listening for Anim skip key press
+            if (cfg.gamepad_btn > 0 and HwKeys.hwPad:call("andTrg", cfg.gamepad_btn)) or HwKeys.hwKB:call("getTrg", cfg.keyboard_btn) then
+                switch_Myset()
+            elseif (cfg.gamepad_red > 0 and HwKeys.hwPad:call("andTrg", cfg.gamepad_red)) or HwKeys.hwKB:call("getTrg", cfg.keyboard_red) then
+                switch_Myset(0)
+            elseif (cfg.gamepad_blue > 0 and HwKeys.hwPad:call("andTrg", cfg.gamepad_blue)) or HwKeys.hwKB:call("getTrg", cfg.keyboard_blue) then
+                switch_Myset(1)
+            elseif (cfg.gamepad_third > 0 and HwKeys.hwPad:call("andTrg", cfg.gamepad_third)) or HwKeys.hwKB:call("getTrg", cfg.keyboard_third) then
+                switch_Myset(2)
+            end
+        elseif is_weapon_drawn() ~= nil then -- is_weapon_drawn() ~= nil means player loaded
+            -- hook hud, moved here to solve compatibility with (skip intro logos)[https://www.nexusmods.com/monsterhunterrise/mods/1209]
+            hook_getHUDString();
+            hook_getEquippedActionMySetDataList();
+            hooked = true;
         end
     end
 end)
