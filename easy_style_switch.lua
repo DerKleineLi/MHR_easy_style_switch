@@ -49,22 +49,121 @@ re.on_config_save(
 )
 
 -- ##########################################
--- disable move switch
+-- global variables
+-- ##########################################
+local script_myset_id = nil; -- {0, 1, 2} the current action set id, 0 for red scroll, 1 for blue scroll, 2 for the third scroll.
+local buff_id = nil; -- {0, 1} the current gui icon id, related to buff, 0 for red scroll, 1 for blue scroll.
+
+-- ##########################################
+-- switch function
+-- ##########################################
+local function switch_Myset(set_id)
+    local player_manager = sdk.get_managed_singleton("snow.player.PlayerManager");
+    local gui_manager = sdk.get_managed_singleton("snow.gui.GuiManager");
+    local master_player = player_manager:call("findMasterPlayer");
+    if not master_player then return end
+    local player_replace_atk_myset_holder = master_player:get_field("_ReplaceAtkMysetHolder");
+    buff_id = player_replace_atk_myset_holder:call("getSelectedIndex");
+    local guiHud_weaponTechniqueMyset = gui_manager:call("get_refGuiHud_WeaponTechniqueMySet");
+    local pnl_scrollicon = guiHud_weaponTechniqueMyset:get_field("pnl_scrollicon");
+
+    if not set_id then
+        if buff_id == 0 then
+            set_id = 1
+        else
+            set_id = 0
+        end
+
+        if cfg.separate_buff_and_action_set then
+            -- change buff
+            player_replace_atk_myset_holder:call("setSelectedMysetIndex", set_id);
+            -- update HUD
+            if set_id ==0 then
+                pnl_scrollicon:call("set_PlayState", "DEFAULT_RED");
+            else
+                pnl_scrollicon:call("set_PlayState", "DEFAULT_BLUE");
+            end
+            buff_id = set_id;
+            return
+        end
+        
+    end
+
+    if script_myset_id ~= set_id then
+        if set_id <= 1 then
+            -- switch Myset
+            player_replace_atk_myset_holder:call("setSelectedMysetIndex", set_id);
+            master_player:set_field("_replaceAttackTypeA", player_replace_atk_myset_holder:call("getReplaceAtkTypeFromMyset",0))
+            master_player:set_field("_replaceAttackTypeB", player_replace_atk_myset_holder:call("getReplaceAtkTypeFromMyset",1))
+            master_player:set_field("_replaceAttackTypeC", player_replace_atk_myset_holder:call("getReplaceAtkTypeFromMyset",2))
+            master_player:set_field("_replaceAttackTypeD", player_replace_atk_myset_holder:call("getReplaceAtkTypeFromMyset",3))
+            master_player:set_field("_replaceAttackTypeE", player_replace_atk_myset_holder:call("getReplaceAtkTypeFromMyset",4))
+            master_player:set_field("_replaceAttackTypeF", player_replace_atk_myset_holder:call("getReplaceAtkTypeFromMyset",5))
+            if cfg.separate_buff_and_action_set then
+                -- hold buff state
+                player_replace_atk_myset_holder:call("setSelectedMysetIndex", buff_id);
+            end
+            -- update hud text
+            guiHud_weaponTechniqueMyset:write_dword(0x118, set_id); -- guiHud_weaponTechniqueMyset:get_field("currentEquippedMySetIndex"):set_field("_Value", set_id);
+            -- update hud icon
+            if not cfg.separate_buff_and_action_set then
+                if set_id ==0 then
+                    pnl_scrollicon:call("set_PlayState", "DEFAULT_RED");
+                else
+                    pnl_scrollicon:call("set_PlayState", "DEFAULT_BLUE");
+                end
+                buff_id = set_id
+            end
+
+        elseif set_id == 2 then
+            -- switch to third style
+            master_player:set_field("_replaceAttackTypeA", cfg.switch_action_0)
+            master_player:set_field("_replaceAttackTypeB", cfg.switch_action_1)
+            master_player:set_field("_replaceAttackTypeD", cfg.switch_action_2)
+            master_player:set_field("_replaceAttackTypeF", cfg.switch_action_4)
+            if cfg.switch_action_3 <= 1 then
+                master_player:set_field("_replaceAttackTypeC", cfg.switch_action_3)
+                master_player:set_field("_replaceAttackTypeE", 0)
+            elseif cfg.switch_action_3 == 2 then
+                master_player:set_field("_replaceAttackTypeC", 0)
+                master_player:set_field("_replaceAttackTypeE", 1)
+            end
+        end
+        script_myset_id = set_id;
+    end
+end
+
+-- ##########################################
+-- Disable action switch by 'switch skill swap'
 -- ##########################################
 local PlayerReplaceAtkMysetHolder = sdk.find_type_definition("snow.player.PlayerReplaceAtkMysetHolder");
 local changeReplaceAtkMyset = PlayerReplaceAtkMysetHolder:get_method("changeReplaceAtkMyset")
 sdk.hook(changeReplaceAtkMyset,function(args)
-    if cfg.disable_move_switch and cfg.enabled then
-        return sdk.PreHookResult.SKIP_ORIGINAL
-    else
-        return sdk.PreHookResult.CALL_ORIGINAL
+    if cfg.enabled then
+        if cfg.disable_move_switch then
+            return sdk.PreHookResult.SKIP_ORIGINAL
+        else
+            if cfg.separate_buff_and_action_set then
+                local set_id = 0;
+                if script_myset_id == 0 then
+                    set_id = 1
+                elseif script_myset_id == 2 and buff_id == 0 then
+                    set_id = 1
+                end
+                switch_Myset(set_id);
+                return sdk.PreHookResult.SKIP_ORIGINAL
+            else
+                script_myset_id = nil;
+            end
+        end
     end
+    return sdk.PreHookResult.CALL_ORIGINAL
 end,function(retval) return retval; end)
 
 local PlayerBase = sdk.find_type_definition("snow.player.PlayerBase");
 local reflectReplaceAtkMyset = PlayerBase:get_method("reflectReplaceAtkMyset");
 sdk.hook(reflectReplaceAtkMyset,function(args)
-    if cfg.disable_move_switch and cfg.enabled then
+    if (cfg.disable_move_switch or cfg.separate_buff_and_action_set) and cfg.enabled then
         return sdk.PreHookResult.SKIP_ORIGINAL
     else
         return sdk.PreHookResult.CALL_ORIGINAL
@@ -99,13 +198,14 @@ end,function(retval)
         local master_player = player_manager:call("findMasterPlayer");
         if not master_player then return retval end
         local player_replace_atk_myset_holder = master_player:get_field("_ReplaceAtkMysetHolder");
-        player_replace_atk_myset_holder:call("setSelectedMysetIndex", current_gui_set_id);
+        buff_id = player_replace_atk_myset_holder:call("getSelectedIndex");
+        player_replace_atk_myset_holder:call("setSelectedMysetIndex", sdk.to_int64(getEquippedActionMySetDataList_args[4]));
         base_0 = mretval[0] - player_replace_atk_myset_holder:call("getReplaceAtkTypeFromMyset",0);
         base_1 = base_0 + 2;
         base_2 = mretval[2] - player_replace_atk_myset_holder:call("getReplaceAtkTypeFromMyset",3);
         base_3 = base_1 + 2;
         base_4 = base_2 + 3;
-        player_replace_atk_myset_holder:call("setSelectedMysetIndex", current_set_id);
+        player_replace_atk_myset_holder:call("setSelectedMysetIndex", buff_id);
         current_weapon = sdk.to_int64(getEquippedActionMySetDataList_args[3]);
     end
     return retval
@@ -167,60 +267,6 @@ sdk.hook(getCommandHud,function(args)
     end
     return sdk.PreHookResult.CALL_ORIGINAL
 end, function(retval) return retval; end)
-
--- ##########################################
--- switch function
--- ##########################################
-local function switch_Myset(set_id)
-    local player_manager = sdk.get_managed_singleton("snow.player.PlayerManager");
-    local gui_manager = sdk.get_managed_singleton("snow.gui.GuiManager");
-    local master_player = player_manager:call("findMasterPlayer");
-    if not master_player then return end
-    local player_replace_atk_myset_holder = master_player:get_field("_ReplaceAtkMysetHolder");
-    local current_set_id = player_replace_atk_myset_holder:call("getSelectedIndex");
-    local guiHud_weaponTechniqueMyset = gui_manager:call("get_refGuiHud_WeaponTechniqueMySet");
-    local current_gui_set_id = guiHud_weaponTechniqueMyset:get_field("currentEquippedMySetIndex"):get_field("_Value")
-
-    if not set_id then
-        if current_gui_set_id == 0 then
-            set_id = 1
-        else
-            set_id = 0
-        end
-    end
-
-    if script_myset_id ~= set_id then
-        if set_id <= 1 then
-            -- switch Myset
-            player_replace_atk_myset_holder:call("setSelectedMysetIndex", set_id);
-            master_player:set_field("_replaceAttackTypeA", player_replace_atk_myset_holder:call("getReplaceAtkTypeFromMyset",0))
-            master_player:set_field("_replaceAttackTypeB", player_replace_atk_myset_holder:call("getReplaceAtkTypeFromMyset",1))
-            master_player:set_field("_replaceAttackTypeC", player_replace_atk_myset_holder:call("getReplaceAtkTypeFromMyset",2))
-            master_player:set_field("_replaceAttackTypeD", player_replace_atk_myset_holder:call("getReplaceAtkTypeFromMyset",3))
-            master_player:set_field("_replaceAttackTypeE", player_replace_atk_myset_holder:call("getReplaceAtkTypeFromMyset",4))
-            master_player:set_field("_replaceAttackTypeF", player_replace_atk_myset_holder:call("getReplaceAtkTypeFromMyset",5))
-            if cfg.separate_buff_and_action_set then
-                player_replace_atk_myset_holder:call("setSelectedMysetIndex", current_set_id);
-            end
-            -- update hud
-            guiHud_weaponTechniqueMyset:write_dword(0x118, set_id); -- guiHud_weaponTechniqueMyset:get_field("currentEquippedMySetIndex"):set_field("_Value", set_id);
-        elseif set_id == 2 then
-            -- switch to third style
-            master_player:set_field("_replaceAttackTypeA", cfg.switch_action_0)
-            master_player:set_field("_replaceAttackTypeB", cfg.switch_action_1)
-            master_player:set_field("_replaceAttackTypeD", cfg.switch_action_2)
-            master_player:set_field("_replaceAttackTypeF", cfg.switch_action_4)
-            if cfg.switch_action_3 <= 1 then
-                master_player:set_field("_replaceAttackTypeC", cfg.switch_action_3)
-                master_player:set_field("_replaceAttackTypeE", 0)
-            elseif cfg.switch_action_3 == 2 then
-                master_player:set_field("_replaceAttackTypeC", 0)
-                master_player:set_field("_replaceAttackTypeE", 1)
-            end
-        end
-        script_myset_id = set_id;
-    end
-end
 
 -- ##########################################
 -- key listening
@@ -330,7 +376,7 @@ re.on_draw_ui(
         local changed, value = imgui.checkbox("Enabled", cfg.enabled)
         if changed then cfg.enabled = value end
 
-        local changed, value = imgui.checkbox("Disable move switch", cfg.disable_move_switch)
+        local changed, value = imgui.checkbox("Disable action switch by 'switch skill swap'", cfg.disable_move_switch)
         if changed then cfg.disable_move_switch = value end
 
         local changed, value = imgui.checkbox("Separate buff and action set", cfg.separate_buff_and_action_set)
@@ -374,7 +420,7 @@ re.on_draw_ui(
         
         else setting_key_flag = 0 end
 
-        if imgui.tree_node("Third style") then
+        if imgui.tree_node("Third scroll") then
             changed, value = imgui.slider_int("Switch action 1", cfg.switch_action_0, 0, 1)
             if changed then cfg.switch_action_0 = value end
 
@@ -390,6 +436,24 @@ re.on_draw_ui(
             changed, value = imgui.slider_int("Switch action 5", cfg.switch_action_4, 0, 1)
             if changed then cfg.switch_action_4 = value end
 
+            imgui.tree_pop()
+        end
+
+        if imgui.tree_node("Explanation") then
+            imgui.text("Disable action switch by 'switch skill swap':");
+			imgui.text("  If enabled, the 'switch skill swap' action will no longer affect the actions.");
+			imgui.text("Separate buff and action set:");
+			imgui.text("  If enabled, the scroll color will no longer linked to actions.");
+            imgui.text("  Therefore the equipment skills depending on scroll colors can be triggered seperately.");
+            imgui.text("Key bindings:");
+			imgui.text("  switch - switch between red and blue scroll.");
+            imgui.text("    If 'Separate buff and action set' is enabled, it will switch scroll color instead of actions.");
+            imgui.text("  red - switch to actions in the red scroll.");
+            imgui.text("  blue - switch to actions in the blue scroll.");
+            imgui.text("  third - switch to actions in the third scroll.");
+            imgui.text("    If 'Separate buff and action set' is enabled, the above three will switch actions instead of scroll color.");
+            imgui.text("Third scroll:");
+            imgui.text("  Customize the third action set, the skill order is the same as in-game setting.");
             imgui.tree_pop()
         end
 
