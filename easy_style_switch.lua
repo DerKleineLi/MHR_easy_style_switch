@@ -165,9 +165,8 @@ local reflectReplaceAtkMyset = PlayerBase:get_method("reflectReplaceAtkMyset");
 sdk.hook(reflectReplaceAtkMyset,function(args)
     if (cfg.disable_move_switch or cfg.separate_buff_and_action_set) and cfg.enabled then
         return sdk.PreHookResult.SKIP_ORIGINAL
-    else
-        return sdk.PreHookResult.CALL_ORIGINAL
     end
+    return sdk.PreHookResult.CALL_ORIGINAL
 end,function(retval) return retval; end)
 
 -- ##########################################
@@ -248,31 +247,37 @@ local function is_weapon_drawn()
 end
 
 -- show action name in third scroll
-local DataShortcut = sdk.find_type_definition("snow.data.DataShortcut");
-local getCommandHud = DataShortcut:get_method("getCommandHud(snow.data.DataDef.PlWeaponActionId)");
-local getName = DataShortcut:get_method("getName(snow.data.DataDef.PlWeaponActionId)");
+local hud_hooked = false;
+local function hook_hud()
+    local DataShortcut = sdk.find_type_definition("snow.data.DataShortcut");
+    local getCommandHud = DataShortcut:get_method("getCommandHud(snow.data.DataDef.PlWeaponActionId)");
+    local getName = DataShortcut:get_method("getName(snow.data.DataDef.PlWeaponActionId)");
+    sdk.hook(getName,function(args)
+        if cfg.enabled and script_myset_id == 2 and is_weapon_drawn() then
+            local id_in_third_scroll = get_corrsponding_action_id_in_third_scroll(sdk.to_int64(args[2]));
+            args[2] = sdk.to_ptr(id_in_third_scroll);
+        end
+        return sdk.PreHookResult.CALL_ORIGINAL
+    end, function(retval) return retval; end)
 
-sdk.hook(getName,function(args)
-    if cfg.enabled and script_myset_id == 2 and is_weapon_drawn() then
-        local id_in_third_scroll = get_corrsponding_action_id_in_third_scroll(sdk.to_int64(args[2]));
-        args[2] = sdk.to_ptr(id_in_third_scroll);
-    end
-    return sdk.PreHookResult.CALL_ORIGINAL
-end, function(retval) return retval; end)
+    sdk.hook(getCommandHud,function(args)
+        if cfg.enabled and script_myset_id == 2 and is_weapon_drawn() then
+            local id_in_third_scroll = get_corrsponding_action_id_in_third_scroll(sdk.to_int64(args[2]));
+            args[2] = sdk.to_ptr(id_in_third_scroll);
+        end
+        return sdk.PreHookResult.CALL_ORIGINAL
+    end, function(retval) return retval; end)
+    hud_hooked = true;
+end
 
-sdk.hook(getCommandHud,function(args)
-    if cfg.enabled and script_myset_id == 2 and is_weapon_drawn() then
-        local id_in_third_scroll = get_corrsponding_action_id_in_third_scroll(sdk.to_int64(args[2]));
-        args[2] = sdk.to_ptr(id_in_third_scroll);
-    end
-    return sdk.PreHookResult.CALL_ORIGINAL
-end, function(retval) return retval; end)
 
 -- ##########################################
 -- key listening
 -- ##########################################
 re.on_frame(function()
     if cfg.enabled and HwKeys.setup() then
+        -- hook hud, moved here to solve compatibility with (skip intro logos)[https://www.nexusmods.com/monsterhunterrise/mods/1209]
+        if not hud_hooked and is_weapon_drawn() then hook_hud() end
         -- Listening for Anim skip key press
         if (cfg.gamepad_btn > 0 and HwKeys.hwPad:call("andTrg", cfg.gamepad_btn)) or HwKeys.hwKB:call("getTrg", cfg.keyboard_btn) then
             switch_Myset()
