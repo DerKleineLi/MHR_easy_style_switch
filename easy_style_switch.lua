@@ -250,7 +250,6 @@ end
 
 -- show action name in third scroll
 local function hook_getHUDString()
-    log.debug("hooking hud")
     local DataShortcut = sdk.find_type_definition("snow.data.DataShortcut");
     local getCommandHud = DataShortcut:get_method("getCommandHud(snow.data.DataDef.PlWeaponActionId)");
     local getName = DataShortcut:get_method("getName(snow.data.DataDef.PlWeaponActionId)");
