@@ -181,11 +181,11 @@ local base_1 = nil;
 local base_2 = nil;
 local base_3 = nil;
 local base_4 = nil;
+local getEquippedActionMySetDataList_args = nil;
 
 local function hook_getEquippedActionMySetDataList()
     local SwitchActionSystem = sdk.find_type_definition("snow.data.SwitchActionSystem");
     local getEquippedActionMySetDataList = SwitchActionSystem:get_method("getEquippedActionMySetDataList(snow.data.weapon.WeaponTypes, snow.data.SwitchActionEquipType)");
-    local getEquippedActionMySetDataList_args = nil;
     sdk.hook(getEquippedActionMySetDataList,function(args) 
         if cfg.enabled then
             getEquippedActionMySetDataList_args = args;
