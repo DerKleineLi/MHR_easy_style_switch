@@ -11,9 +11,9 @@ local HwKeys = require("easy_style_switch.HwKeys");
 local cfg = json.load_file("easy_style_switch_settings.json")
 
 cfg = cfg or {}
-cfg.enabled = cfg.enabled or true
-cfg.disable_move_switch = cfg.disable_move_switch or true
-cfg.separate_buff_and_action_set = cfg.separate_buff_and_action_set or true
+cfg.enabled = cfg.enabled or false
+cfg.disable_move_switch = cfg.disable_move_switch or false
+cfg.separate_buff_and_action_set = cfg.separate_buff_and_action_set or false
 cfg.keyboard_btn = cfg.keyboard_btn or 0
 cfg.keyboard_red = cfg.keyboard_red or 0
 cfg.keyboard_blue = cfg.keyboard_blue or 0
