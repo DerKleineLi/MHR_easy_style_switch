@@ -451,20 +451,43 @@ re.on_draw_ui(
         end
 
         if imgui.tree_node("Explanation") then
-            imgui.text("Disable action switch by 'switch skill swap':");
-			imgui.text("  If enabled, the 'switch skill swap' action will no longer affect the actions.");
-			imgui.text("Separate buff and action set:");
-			imgui.text("  If enabled, the scroll color will no longer linked to actions.");
-            imgui.text("  Therefore the equipment skills depending on scroll colors can be triggered seperately.");
-            imgui.text("Key bindings:");
-			imgui.text("  switch - switch between red and blue scroll.");
-            imgui.text("    If 'Separate buff and action set' is enabled, it will switch scroll color instead of actions.");
-            imgui.text("  red - switch to actions in the red scroll.");
-            imgui.text("  blue - switch to actions in the blue scroll.");
-            imgui.text("  third - switch to actions in the third scroll.");
-            imgui.text("    If 'Separate buff and action set' is enabled, the above three will switch actions instead of scroll color.");
-            imgui.text("Third scroll:");
-            imgui.text("  Customize the third action set, the skill order is the same as in-game setting.");
+            imgui.text("This is the explanation of the above options.");
+            if imgui.tree_node("Enabled") then
+			    imgui.text("The overall switch for the mod functionality.");
+                imgui.tree_pop()
+            end
+            if imgui.tree_node("Disable action switch by 'switch skill swap'") then
+			    imgui.text("If enabled, the 'switch skill swap' action will no longer affect the actions.");
+                imgui.tree_pop()
+            end
+            if imgui.tree_node("Separate buff and action set") then
+                imgui.text("If enabled, the scroll color will no longer linked to actions.");
+                imgui.text("Therefore the equipment skills depending on scroll colors can be triggered seperately.");
+                imgui.tree_pop()
+            end
+            if imgui.tree_node("Key bindings") then
+                if imgui.tree_node("Keyboard/Gamepad switch - switch between red and blue scroll.") then
+                    imgui.text("If 'Separate buff and action set' is enabled, it will switch scroll color instead of actions.");
+                    imgui.tree_pop()
+                end
+                if imgui.tree_node("Keyboard/Gamepad red - switch to actions in the red scroll.") then
+                    imgui.text("If 'Separate buff and action set' is enabled, it will switch actions instead of scroll color.");
+                    imgui.tree_pop()
+                end
+                if imgui.tree_node("Keyboard/Gamepad blue - switch to actions in the blue scroll.") then
+                    imgui.text("If 'Separate buff and action set' is enabled, it will switch actions instead of scroll color.");
+                    imgui.tree_pop()
+                end
+                if imgui.tree_node("Keyboard/Gamepad third - switch to actions in the third scroll.") then
+                    imgui.text("If 'Separate buff and action set' is enabled, it will switch actions instead of scroll color.");
+                    imgui.tree_pop()
+                end
+                imgui.tree_pop()
+            end
+            if imgui.tree_node("Third scroll") then
+                imgui.text("Customize the third action set, the skill order is the same as in-game setting.");
+                imgui.tree_pop()
+            end
             imgui.tree_pop()
         end
 
