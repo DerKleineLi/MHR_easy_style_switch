@@ -370,7 +370,7 @@ local case_key_setting = {
 }
 
 local function get_key_setting()
-    if case_key_setting[setting_key_flag] then
+    if case_key_setting[setting_key_flag] and HwKeys.setup() then
         case_key_setting[setting_key_flag]()
     end
 end
