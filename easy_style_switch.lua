@@ -305,7 +305,7 @@ local setting_key_flag = 0;
 local case_key_setting = {
     [1] = function() 
         cfg.keyboard_btn = 0
-        key = HwKeys.get_keyboard()
+        local key = HwKeys.get_keyboard()
         if key > 0 then
             cfg.keyboard_btn = key
             setting_key_flag = 0
@@ -313,7 +313,7 @@ local case_key_setting = {
     end, 
     [2] = function() 
         cfg.keyboard_red = 0
-        key = HwKeys.get_keyboard()
+        local key = HwKeys.get_keyboard()
         if key > 0 then
             cfg.keyboard_red = key
             setting_key_flag = 0
@@ -321,7 +321,7 @@ local case_key_setting = {
     end, 
     [3] = function() 
         cfg.keyboard_blue = 0
-        key = HwKeys.get_keyboard()
+        local key = HwKeys.get_keyboard()
         if key > 0 then
             cfg.keyboard_blue = key
             setting_key_flag = 0
@@ -329,7 +329,7 @@ local case_key_setting = {
     end, 
     [4] = function() 
         cfg.keyboard_third = 0
-        key = HwKeys.get_keyboard()
+        local key = HwKeys.get_keyboard()
         if key > 0 then
             cfg.keyboard_third = key
             setting_key_flag = 0
@@ -337,7 +337,7 @@ local case_key_setting = {
     end, 
     [5] = function() 
         cfg.gamepad_btn = 0
-        key = HwKeys.get_gamepad()
+        local key = HwKeys.get_gamepad()
         if key > 0 then 
             cfg.gamepad_btn = key
             setting_key_flag = 0
@@ -345,7 +345,7 @@ local case_key_setting = {
     end, 
     [6] = function() 
         cfg.gamepad_red = 0
-        key = HwKeys.get_gamepad()
+        local key = HwKeys.get_gamepad()
         if key > 0 then 
             cfg.gamepad_red = key
             setting_key_flag = 0
@@ -353,7 +353,7 @@ local case_key_setting = {
     end, 
     [7] = function() 
         cfg.gamepad_blue = 0
-        key = HwKeys.get_gamepad()
+        local key = HwKeys.get_gamepad()
         if key > 0 then 
             cfg.gamepad_blue = key
             setting_key_flag = 0
@@ -361,7 +361,7 @@ local case_key_setting = {
     end, 
     [8] = function() 
         cfg.gamepad_third = 0
-        key = HwKeys.get_gamepad()
+        local key = HwKeys.get_gamepad()
         if key > 0 then 
             cfg.gamepad_third = key
             setting_key_flag = 0
