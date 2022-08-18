@@ -370,6 +370,19 @@ local case_key_setting = {
 }
 
 local function get_key_setting()
+    if case_key_setting[setting_key_flag] then
+        log.debug("setting key " .. setting_key_flag)
+        if HwKeys.setup() then
+            log.debug("HwKeys is set up.")
+        else
+            log.debug("HwKeys is not set up.")
+        end
+        if HwKeys.hwPad == nil then
+            log.debug("hwPad is nil.")
+        else
+            log.debug("hwPad is not nil.")
+        end
+    end
     if case_key_setting[setting_key_flag] and HwKeys.setup() then
         case_key_setting[setting_key_flag]()
     end
