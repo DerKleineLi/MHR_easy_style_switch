@@ -382,8 +382,6 @@ re.on_draw_ui(
     function() 
         if not imgui.tree_node("Easy style switch") then return end
 
-        get_key_setting()
-
         local changed, value = imgui.checkbox("Enabled", cfg.enabled)
         if changed then cfg.enabled = value end
 
@@ -492,5 +490,7 @@ re.on_draw_ui(
         end
 
         imgui.tree_pop()
+        
+        get_key_setting()
     end
 )
