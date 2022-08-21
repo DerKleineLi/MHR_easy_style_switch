@@ -211,6 +211,14 @@ local function hook_getEquippedActionMySetDataList()
         end
         return sdk.PreHookResult.CALL_ORIGINAL;
     end,function(retval) 
+        log.debug("=============")
+        log.debug(sdk.to_int64(getEquippedActionMySetDataList_args[4]))
+        local mmretval = sdk.to_managed_object(retval)
+        log.debug(mmretval[0])
+        log.debug(mmretval[1])
+        log.debug(mmretval[2])
+        log.debug(mmretval[3])
+        log.debug(mmretval[4])
         if cfg.enabled and current_weapon ~= sdk.to_int64(getEquippedActionMySetDataList_args[3]) then
             script_myset_id = 0;
             buff_id = 0;
@@ -412,19 +420,6 @@ local case_key_setting = {
 }
 
 local function get_key_setting()
-    if case_key_setting[setting_key_flag] then
-        log.debug("setting key " .. setting_key_flag)
-        if HwKeys.setup() then
-            log.debug("HwKeys is set up.")
-        else
-            log.debug("HwKeys is not set up.")
-        end
-        if HwKeys.hwPad == nil then
-            log.debug("hwPad is nil.")
-        else
-            log.debug("hwPad is not nil.")
-        end
-    end
     if case_key_setting[setting_key_flag] and HwKeys.setup() then
         case_key_setting[setting_key_flag]()
     end
