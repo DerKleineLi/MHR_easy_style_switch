@@ -4,6 +4,9 @@ log.info("[easy_style_switch.lua] loaded")
 -- load modules
 -- ##########################################
 local HwKeys = require("easy_style_switch.HwKeys");
+local quest_status = require("easy_style_switch.quest_status");
+
+quest_status.init_module();
 
 -- ##########################################
 -- script config
@@ -54,19 +57,45 @@ re.on_config_save(
 local script_myset_id = nil; -- {0, 1, 2} the current action set id, 0 for red scroll, 1 for blue scroll, 2 for the third scroll.
 local buff_id = nil; -- {0, 1} the current gui icon id, related to buff, 0 for red scroll, 1 for blue scroll.
 local hooked = false; -- indicates whether the functions related to hud are hooked.
+local new_quest_initialized = false; -- indicates whether the id is set to 0 when entering a new quest or training area.
+local current_weapon = nil; -- current weapon type
+local do_open_called = false; -- whether snow.gui.GuiHud_WeaponTechniqueMySet.doOpen() is called and hud need reupdate. 
+-- index of the default switch actions
+local base_0 = nil;
+local base_1 = nil;
+local base_2 = nil;
+local base_3 = nil;
+local base_4 = nil;
+
+-- ##########################################
+-- HUD update
+-- ##########################################
+local function update_hud()
+    local gui_manager = sdk.get_managed_singleton("snow.gui.GuiManager");
+    local guiHud_weaponTechniqueMySet = gui_manager:call("get_refGuiHud_WeaponTechniqueMySet");
+    local pnl_scrollicon = guiHud_weaponTechniqueMySet:get_field("pnl_scrollicon");
+
+    if buff_id == 0 then
+        pnl_scrollicon:call("set_PlayState", "DEFAULT_RED");
+    elseif buff_id == 1 then
+        pnl_scrollicon:call("set_PlayState", "DEFAULT_BLUE");
+    end
+
+    if script_myset_id <= 1 then
+        guiHud_weaponTechniqueMySet:write_dword(0x118, script_myset_id); -- guiHud_weaponTechniqueMySet:get_field("currentEquippedMySetIndex"):set_field("_Value", set_id);
+    end
+    -- script_myset_id == 2 is handled by hook_getHUDString()
+end
 
 -- ##########################################
 -- switch function
 -- ##########################################
 local function switch_Myset(set_id)
     local player_manager = sdk.get_managed_singleton("snow.player.PlayerManager");
-    local gui_manager = sdk.get_managed_singleton("snow.gui.GuiManager");
     local master_player = player_manager:call("findMasterPlayer");
     if not master_player then return end
     local player_replace_atk_myset_holder = master_player:get_field("_ReplaceAtkMysetHolder");
     buff_id = player_replace_atk_myset_holder:call("getSelectedIndex");
-    local guiHud_weaponTechniqueMyset = gui_manager:call("get_refGuiHud_WeaponTechniqueMySet");
-    local pnl_scrollicon = guiHud_weaponTechniqueMyset:get_field("pnl_scrollicon");
 
     if not set_id then
         if buff_id == 0 then
@@ -78,13 +107,9 @@ local function switch_Myset(set_id)
         if cfg.separate_buff_and_action_set then
             -- change buff
             player_replace_atk_myset_holder:call("setSelectedMysetIndex", set_id);
-            -- update HUD
-            if set_id ==0 then
-                pnl_scrollicon:call("set_PlayState", "DEFAULT_RED");
-            else
-                pnl_scrollicon:call("set_PlayState", "DEFAULT_BLUE");
-            end
             buff_id = set_id;
+
+            update_hud();
             return
         end
         
@@ -103,17 +128,8 @@ local function switch_Myset(set_id)
             if cfg.separate_buff_and_action_set then
                 -- hold buff state
                 player_replace_atk_myset_holder:call("setSelectedMysetIndex", buff_id);
-            end
-            -- update hud text
-            guiHud_weaponTechniqueMyset:write_dword(0x118, set_id); -- guiHud_weaponTechniqueMyset:get_field("currentEquippedMySetIndex"):set_field("_Value", set_id);
-            -- update hud icon
-            if not cfg.separate_buff_and_action_set then
-                if set_id ==0 then
-                    pnl_scrollicon:call("set_PlayState", "DEFAULT_RED");
-                else
-                    pnl_scrollicon:call("set_PlayState", "DEFAULT_BLUE");
-                end
-                buff_id = set_id
+            else
+                buff_id = set_id;
             end
 
         elseif set_id == 2 then
@@ -131,6 +147,7 @@ local function switch_Myset(set_id)
             end
         end
         script_myset_id = set_id;
+        update_hud();
     end
 end
 
@@ -140,7 +157,7 @@ end
 local PlayerReplaceAtkMysetHolder = sdk.find_type_definition("snow.player.PlayerReplaceAtkMysetHolder");
 local changeReplaceAtkMyset = PlayerReplaceAtkMysetHolder:get_method("changeReplaceAtkMyset")
 sdk.hook(changeReplaceAtkMyset,function(args)
-    if cfg.enabled then
+    if cfg.enabled and new_quest_initialized then
         if cfg.disable_move_switch then
             return sdk.PreHookResult.SKIP_ORIGINAL
         else
@@ -164,7 +181,7 @@ end,function(retval) return retval; end)
 local PlayerBase = sdk.find_type_definition("snow.player.PlayerBase");
 local reflectReplaceAtkMyset = PlayerBase:get_method("reflectReplaceAtkMyset");
 sdk.hook(reflectReplaceAtkMyset,function(args)
-    if (cfg.disable_move_switch or cfg.separate_buff_and_action_set) and cfg.enabled then
+    if (cfg.disable_move_switch or cfg.separate_buff_and_action_set) and cfg.enabled and new_quest_initialized then
         return sdk.PreHookResult.SKIP_ORIGINAL
     end
     return sdk.PreHookResult.CALL_ORIGINAL
@@ -174,13 +191,15 @@ end,function(retval) return retval; end)
 -- HUD hook
 -- ##########################################
 
--- get the default action id
-local current_weapon = nil;
-local base_0 = nil;
-local base_1 = nil;
-local base_2 = nil;
-local base_3 = nil;
-local base_4 = nil;
+local GuiHud_WeaponTechniqueMySet = sdk.find_type_definition("snow.gui.GuiHud_WeaponTechniqueMySet");
+local doOpen = GuiHud_WeaponTechniqueMySet:get_method("doOpen");
+sdk.hook(doOpen,function(args) 
+    if cfg.enabled and new_quest_initialized then
+        do_open_called = true;
+    end
+    return sdk.PreHookResult.CALL_ORIGINAL;
+end,function(retval) return retval; end);
+
 local getEquippedActionMySetDataList_args = nil;
 
 local function hook_getEquippedActionMySetDataList()
@@ -193,6 +212,9 @@ local function hook_getEquippedActionMySetDataList()
         return sdk.PreHookResult.CALL_ORIGINAL;
     end,function(retval) 
         if cfg.enabled and current_weapon ~= sdk.to_int64(getEquippedActionMySetDataList_args[3]) then
+            script_myset_id = 0;
+            buff_id = 0;
+            switch_weapon_initialized = false;
             local mretval = sdk.to_managed_object(retval)
             local player_manager = sdk.get_managed_singleton("snow.player.PlayerManager");
             local master_player = player_manager:call("findMasterPlayer");
@@ -272,10 +294,30 @@ end
 
 
 -- ##########################################
--- key listening
+-- on frame
 -- ##########################################
+
 re.on_frame(function()
-    if cfg.enabled and HwKeys.setup() then
+    if not cfg.enabled then return end
+
+    -- initialize quest
+    if quest_status.in_active_area() then
+        if not new_quest_initialized then
+            script_myset_id = 0;
+            buff_id = 0;
+            new_quest_initialized = true;
+        end
+    else
+        new_quest_initialized = false;
+    end
+
+    -- update hud
+    if do_open_called then
+        update_hud();
+    end
+
+    -- key listening
+    if HwKeys.setup() then
 
         if hooked then
             -- Listening for Anim skip key press
