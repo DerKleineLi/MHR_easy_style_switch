@@ -215,6 +215,7 @@ local function get_corrsponding_action_id_in_third_scroll(action_id)
         for j = 1,weapon_actions.length_slot[i] do
             if action_id == weapon_actions.id_table[current_weapon+1][i][j] then
                 switch_action_slot_id = i;
+                break;
             end
         end
     end
@@ -257,10 +258,10 @@ local function hook_getHUDString()
 
     sdk.hook(get_SubtractGage,function(args)
         if cfg.enabled and script_myset_id == 2 and is_weapon_drawn() then
-            marg2 = sdk.to_managed_object(args[2])
+            local marg2 = sdk.to_managed_object(args[2])
             local weapon_type = marg2:call("get_WeaponType")
             local group_id = marg2:call("get_GroupIndexMR")
-            new_marg2 = marg2:call("MemberwiseClone");
+            local new_marg2 = marg2:call("MemberwiseClone");
             new_marg2:call("setId(snow.data.DataDef.PlWeaponActionId)", weapon_actions.id_table[weapon_type+1][group_id+1][cfg.third_scroll[group_id+1]]);
             args[2] = sdk.to_ptr(new_marg2);
         end
