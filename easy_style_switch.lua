@@ -5,6 +5,7 @@ log.info("[easy_style_switch.lua] loaded")
 -- ##########################################
 local HwKeys = require("easy_style_switch.HwKeys");
 local quest_status = require("easy_style_switch.quest_status");
+local weapon_actions = require("easy_style_switch.weapon_actions");
 
 quest_status.init_module();
 
@@ -25,11 +26,10 @@ cfg.gamepad_btn = cfg.gamepad_btn or 0
 cfg.gamepad_red = cfg.gamepad_red or 0
 cfg.gamepad_blue = cfg.gamepad_blue or 0
 cfg.gamepad_third = cfg.gamepad_third or 0
-cfg.switch_action_0 = cfg.switch_action_0 or 0
-cfg.switch_action_1 = cfg.switch_action_1 or 0
-cfg.switch_action_2 = cfg.switch_action_2 or 0
-cfg.switch_action_3 = cfg.switch_action_3 or 0
-cfg.switch_action_4 = cfg.switch_action_4 or 0
+cfg.third_scroll = cfg.third_scroll or {}
+for i=1,5 do
+    cfg.third_scroll[i] = cfg.third_scroll[i] or 1
+end
 
 cfg.keyboard_btn = math.floor(cfg.keyboard_btn)
 cfg.keyboard_red = math.floor(cfg.keyboard_red)
@@ -39,11 +39,9 @@ cfg.gamepad_btn = math.floor(cfg.gamepad_btn)
 cfg.gamepad_red = math.floor(cfg.gamepad_red)
 cfg.gamepad_blue = math.floor(cfg.gamepad_blue)
 cfg.gamepad_third = math.floor(cfg.gamepad_third)
-cfg.switch_action_0 = math.floor(cfg.switch_action_0)
-cfg.switch_action_1 = math.floor(cfg.switch_action_1)
-cfg.switch_action_2 = math.floor(cfg.switch_action_2)
-cfg.switch_action_3 = math.floor(cfg.switch_action_3)
-cfg.switch_action_4 = math.floor(cfg.switch_action_4)
+for i=1,5 do
+    cfg.third_scroll[i] = math.floor(cfg.third_scroll[i])
+end
 
 re.on_config_save(
     function()
@@ -58,14 +56,8 @@ local script_myset_id = nil; -- {0, 1, 2} the current action set id, 0 for red s
 local buff_id = nil; -- {0, 1} the current gui icon id, related to buff, 0 for red scroll, 1 for blue scroll.
 local hooked = false; -- indicates whether the functions related to hud are hooked.
 local new_quest_initialized = false; -- indicates whether the id is set to 0 when entering a new quest or training area.
-local current_weapon = nil; -- current weapon type
+local current_weapon = nil; -- [0,13] current weapon type
 local do_open_called = false; -- whether snow.gui.GuiHud_WeaponTechniqueMySet.doOpen() is called and hud need reupdate. 
--- index of the default switch actions
-local base_0 = nil;
-local base_1 = nil;
-local base_2 = nil;
-local base_3 = nil;
-local base_4 = nil;
 
 -- ##########################################
 -- HUD update
@@ -73,6 +65,7 @@ local base_4 = nil;
 local function update_hud()
     local gui_manager = sdk.get_managed_singleton("snow.gui.GuiManager");
     local guiHud_weaponTechniqueMySet = gui_manager:call("get_refGuiHud_WeaponTechniqueMySet");
+    if not guiHud_weaponTechniqueMySet then return end
     local pnl_scrollicon = guiHud_weaponTechniqueMySet:get_field("pnl_scrollicon");
 
     if buff_id == 0 then
@@ -115,40 +108,33 @@ local function switch_Myset(set_id)
         
     end
 
-    if script_myset_id ~= set_id then
-        if set_id <= 1 then
-            -- switch Myset
-            player_replace_atk_myset_holder:call("setSelectedMysetIndex", set_id);
-            master_player:set_field("_replaceAttackTypeA", player_replace_atk_myset_holder:call("getReplaceAtkTypeFromMyset",0))
-            master_player:set_field("_replaceAttackTypeB", player_replace_atk_myset_holder:call("getReplaceAtkTypeFromMyset",1))
-            master_player:set_field("_replaceAttackTypeC", player_replace_atk_myset_holder:call("getReplaceAtkTypeFromMyset",2))
-            master_player:set_field("_replaceAttackTypeD", player_replace_atk_myset_holder:call("getReplaceAtkTypeFromMyset",3))
-            master_player:set_field("_replaceAttackTypeE", player_replace_atk_myset_holder:call("getReplaceAtkTypeFromMyset",4))
-            master_player:set_field("_replaceAttackTypeF", player_replace_atk_myset_holder:call("getReplaceAtkTypeFromMyset",5))
-            if cfg.separate_buff_and_action_set then
-                -- hold buff state
-                player_replace_atk_myset_holder:call("setSelectedMysetIndex", buff_id);
-            else
-                buff_id = set_id;
-            end
-
-        elseif set_id == 2 then
-            -- switch to third style
-            master_player:set_field("_replaceAttackTypeA", cfg.switch_action_0)
-            master_player:set_field("_replaceAttackTypeB", cfg.switch_action_1)
-            master_player:set_field("_replaceAttackTypeD", cfg.switch_action_2)
-            master_player:set_field("_replaceAttackTypeF", cfg.switch_action_4)
-            if cfg.switch_action_3 <= 1 then
-                master_player:set_field("_replaceAttackTypeC", cfg.switch_action_3)
-                master_player:set_field("_replaceAttackTypeE", 0)
-            elseif cfg.switch_action_3 == 2 then
-                master_player:set_field("_replaceAttackTypeC", 0)
-                master_player:set_field("_replaceAttackTypeE", 1)
-            end
+    if set_id <= 1 then
+        -- switch Myset
+        player_replace_atk_myset_holder:call("setSelectedMysetIndex", set_id);
+        master_player:set_field("_replaceAttackTypeA", player_replace_atk_myset_holder:call("getReplaceAtkTypeFromMyset",0))
+        master_player:set_field("_replaceAttackTypeB", player_replace_atk_myset_holder:call("getReplaceAtkTypeFromMyset",1))
+        master_player:set_field("_replaceAttackTypeC", player_replace_atk_myset_holder:call("getReplaceAtkTypeFromMyset",2))
+        master_player:set_field("_replaceAttackTypeD", player_replace_atk_myset_holder:call("getReplaceAtkTypeFromMyset",3))
+        master_player:set_field("_replaceAttackTypeE", player_replace_atk_myset_holder:call("getReplaceAtkTypeFromMyset",4))
+        master_player:set_field("_replaceAttackTypeF", player_replace_atk_myset_holder:call("getReplaceAtkTypeFromMyset",5))
+        if cfg.separate_buff_and_action_set then
+            -- hold buff state
+            player_replace_atk_myset_holder:call("setSelectedMysetIndex", buff_id);
+        else
+            buff_id = set_id;
         end
-        script_myset_id = set_id;
-        update_hud();
+
+    elseif set_id == 2 then
+        -- switch to third style
+        master_player:set_field("_replaceAttackTypeA", cfg.third_scroll[1]-1)
+        master_player:set_field("_replaceAttackTypeB", cfg.third_scroll[2]-1)
+        master_player:set_field("_replaceAttackTypeC", (cfg.third_scroll[4]-1)%2)
+        master_player:set_field("_replaceAttackTypeD", cfg.third_scroll[3]-1)
+        master_player:set_field("_replaceAttackTypeF", cfg.third_scroll[5]-1)
+        master_player:set_field("_replaceAttackTypeE", (cfg.third_scroll[4]-1)//2)
     end
+    script_myset_id = set_id;
+    update_hud();
 end
 
 -- ##########################################
@@ -216,19 +202,6 @@ local function hook_getEquippedActionMySetDataList()
             script_myset_id = 0;
             buff_id = 0;
             switch_weapon_initialized = false;
-            local mretval = sdk.to_managed_object(retval)
-            local player_manager = sdk.get_managed_singleton("snow.player.PlayerManager");
-            local master_player = player_manager:call("findMasterPlayer");
-            if not master_player then return retval end
-            local player_replace_atk_myset_holder = master_player:get_field("_ReplaceAtkMysetHolder");
-            buff_id = player_replace_atk_myset_holder:call("getSelectedIndex");
-            player_replace_atk_myset_holder:call("setSelectedMysetIndex", sdk.to_int64(getEquippedActionMySetDataList_args[4]));
-            base_0 = mretval[0] - player_replace_atk_myset_holder:call("getReplaceAtkTypeFromMyset",0);
-            base_1 = base_0 + 2;
-            base_2 = mretval[2] - player_replace_atk_myset_holder:call("getReplaceAtkTypeFromMyset",3);
-            base_3 = base_1 + 2;
-            base_4 = base_2 + 3;
-            player_replace_atk_myset_holder:call("setSelectedMysetIndex", buff_id);
             current_weapon = sdk.to_int64(getEquippedActionMySetDataList_args[3]);
         end
         return retval
@@ -237,29 +210,17 @@ end
 
 -- helper functions
 local function get_corrsponding_action_id_in_third_scroll(action_id)
-    if not base_0 then return nil end
-    local id_in_third_scroll = nil;
-    if action_id>= base_0 and action_id<base_1 then
-        -- switch action 0
-        id_in_third_scroll = base_0 + cfg.switch_action_0;
-    elseif action_id>= base_1 and action_id<base_3 then
-        -- switch action 1
-        id_in_third_scroll = base_1 + cfg.switch_action_1;
-    elseif action_id>=base_2 and action_id < base_2+2 then
-        -- switch action 2
-        id_in_third_scroll = base_2 + cfg.switch_action_2;
-    elseif (action_id>=base_3 and action_id<base_3+2) or action_id == base_2+2 then
-        -- switch action 3
-        if cfg.switch_action_3 <= 1 then
-            id_in_third_scroll = base_3 + cfg.switch_action_3;
-        elseif cfg.switch_action_3 == 2 then
-            id_in_third_scroll = base_2 + 2;
+    local switch_action_slot_id = nil;
+    for i = 1,5 do
+        for j = 1,weapon_actions.length_slot[i] do
+            if action_id == weapon_actions.id_table[current_weapon+1][i][j] then
+                switch_action_slot_id = i;
+            end
         end
-    elseif action_id>=base_4 and action_id < base_4+2 then
-        -- switch action 4
-        id_in_third_scroll = base_4 + cfg.switch_action_4;
     end
-    return id_in_third_scroll;
+    if switch_action_slot_id then
+        return weapon_actions.id_table[current_weapon+1][switch_action_slot_id][cfg.third_scroll[switch_action_slot_id]]
+    end
 end
 
 local function is_weapon_drawn()
@@ -273,10 +234,12 @@ end
 
 -- show action name in third scroll
 local function hook_getHUDString()
-    local DataShortcut = sdk.find_type_definition("snow.data.DataShortcut");
-    local getCommandHud = DataShortcut:get_method("getCommandHud(snow.data.DataDef.PlWeaponActionId)");
-    local getName = DataShortcut:get_method("getName(snow.data.DataDef.PlWeaponActionId)");
-    sdk.hook(getName,function(args)
+    local PlSwitchActionData = sdk.find_type_definition("snow.data.PlSwitchActionData");
+    local get_Name = PlSwitchActionData:get_method("get_Name");
+    local get_CommandHud = PlSwitchActionData:get_method("get_CommandHud");
+    local get_SubtractGage = PlSwitchActionData:get_method("get_SubtractGage");
+
+    sdk.hook(get_Name,function(args)
         if cfg.enabled and script_myset_id == 2 and is_weapon_drawn() then
             local id_in_third_scroll = get_corrsponding_action_id_in_third_scroll(sdk.to_int64(args[2]));
             args[2] = sdk.to_ptr(id_in_third_scroll);
@@ -284,10 +247,22 @@ local function hook_getHUDString()
         return sdk.PreHookResult.CALL_ORIGINAL
     end, function(retval) return retval; end)
 
-    sdk.hook(getCommandHud,function(args)
+    sdk.hook(get_CommandHud,function(args)
         if cfg.enabled and script_myset_id == 2 and is_weapon_drawn() then
             local id_in_third_scroll = get_corrsponding_action_id_in_third_scroll(sdk.to_int64(args[2]));
             args[2] = sdk.to_ptr(id_in_third_scroll);
+        end
+        return sdk.PreHookResult.CALL_ORIGINAL
+    end, function(retval) return retval; end)
+
+    sdk.hook(get_SubtractGage,function(args)
+        if cfg.enabled and script_myset_id == 2 and is_weapon_drawn() then
+            marg2 = sdk.to_managed_object(args[2])
+            local weapon_type = marg2:call("get_WeaponType")
+            local group_id = marg2:call("get_GroupIndexMR")
+            new_marg2 = marg2:call("MemberwiseClone");
+            new_marg2:call("setId(snow.data.DataDef.PlWeaponActionId)", weapon_actions.id_table[weapon_type+1][group_id+1][cfg.third_scroll[group_id+1]]);
+            args[2] = sdk.to_ptr(new_marg2);
         end
         return sdk.PreHookResult.CALL_ORIGINAL
     end, function(retval) return retval; end)
@@ -315,6 +290,7 @@ re.on_frame(function()
     -- update hud
     if do_open_called then
         update_hud();
+        do_open_called = false;
     end
 
     -- key listening
@@ -474,21 +450,10 @@ re.on_draw_ui(
         else setting_key_flag = 0 end
 
         if imgui.tree_node("Third scroll") then
-            changed, value = imgui.slider_int("Switch action 1", cfg.switch_action_0, 0, 1)
-            if changed then cfg.switch_action_0 = value end
-
-            changed, value = imgui.slider_int("Switch action 2", cfg.switch_action_1, 0, 1)
-            if changed then cfg.switch_action_1 = value end
-
-            changed, value = imgui.slider_int("Switch action 3", cfg.switch_action_2, 0, 1)
-            if changed then cfg.switch_action_2 = value end
-
-            changed, value = imgui.slider_int("Switch action 4", cfg.switch_action_3, 0, 2)
-            if changed then cfg.switch_action_3 = value end
-
-            changed, value = imgui.slider_int("Switch action 5", cfg.switch_action_4, 0, 1)
-            if changed then cfg.switch_action_4 = value end
-
+            for i=1,5 do
+                local changed, value = imgui.slider_int("Switch action " .. i, cfg.third_scroll[i], 1, weapon_actions.length_slot[i])
+                if changed then cfg.third_scroll[i] = value end
+            end
             imgui.tree_pop()
         end
 
