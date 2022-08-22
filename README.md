@@ -25,7 +25,7 @@
 
 [godoakos](https://www.nexusmods.com/monsterhunterrise/users/453968) - 他开发的 [Carve Timer Skip and Fast Return](https://www.nexusmods.com/monsterhunterrise/mods/62) 提供了案件绑定的框架。
 
-[GreenComfyTea](https://www.nexusmods.com/monsterhunterrise/users/136480908) - 他开发的 [MHR Overlay](https://www.nexusmods.com/monsterhunterrise/mods/50) 提供了判断任务状态的方法.
+[GreenComfyTea](https://www.nexusmods.com/monsterhunterrise/users/136480908) - 他开发的 [MHR Overlay](https://www.nexusmods.com/monsterhunterrise/mods/50) 提供了判断任务状态的方法。
 
 ### 已知问题
 
@@ -62,7 +62,7 @@ This mod enables instant scroll-switch. You can also customize a third scroll an
 
 [godoakos](https://www.nexusmods.com/monsterhunterrise/users/453968) - creator of [Carve Timer Skip and Fast Return](https://www.nexusmods.com/monsterhunterrise/mods/62) mod, which provides pattern for key binding.
 
-[GreenComfyTea](https://www.nexusmods.com/monsterhunterrise/users/136480908) - creator of [MHR Overlay](https://www.nexusmods.com/monsterhunterrise/mods/50) mod, which shows how to get quest_status.
+[GreenComfyTea](https://www.nexusmods.com/monsterhunterrise/users/136480908) - creator of [MHR Overlay](https://www.nexusmods.com/monsterhunterrise/mods/50) mod, which shows how to get quest status.
 
 ### Known issue
 
