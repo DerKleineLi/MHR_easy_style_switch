@@ -454,22 +454,6 @@ re.on_draw_ui(
                 local changed, value = imgui.slider_int("Switch action " .. i, cfg.third_scroll[i], 1, weapon_actions.length_slot[i])
                 if changed then cfg.third_scroll[i] = value end
             end
-
-            -- changed, value = imgui.slider_int("Switch action 1", cfg.switch_action_0, 0, 1)
-            -- if changed then cfg.switch_action_0 = value end
-
-            -- changed, value = imgui.slider_int("Switch action 2", cfg.switch_action_1, 0, 1)
-            -- if changed then cfg.switch_action_1 = value end
-
-            -- changed, value = imgui.slider_int("Switch action 3", cfg.switch_action_2, 0, 1)
-            -- if changed then cfg.switch_action_2 = value end
-
-            -- changed, value = imgui.slider_int("Switch action 4", cfg.switch_action_3, 0, 2)
-            -- if changed then cfg.switch_action_3 = value end
-
-            -- changed, value = imgui.slider_int("Switch action 5", cfg.switch_action_4, 0, 1)
-            -- if changed then cfg.switch_action_4 = value end
-
             imgui.tree_pop()
         end
 
