@@ -197,15 +197,16 @@ end,function(retval) return retval; end)
 -- ##########################################
 -- HUD hook
 -- ##########################################
-
-local GuiHud_WeaponTechniqueMySet = sdk.find_type_definition("snow.gui.GuiHud_WeaponTechniqueMySet");
-local doOpen = GuiHud_WeaponTechniqueMySet:get_method("doOpen");
-sdk.hook(doOpen,function(args) 
-    if cfg.enabled and new_quest_initialized then
-        do_open_called = true;
-    end
-    return sdk.PreHookResult.CALL_ORIGINAL;
-end,function(retval) return retval; end);
+local function hook_doOpen()
+    local GuiHud_WeaponTechniqueMySet = sdk.find_type_definition("snow.gui.GuiHud_WeaponTechniqueMySet");
+    local doOpen = GuiHud_WeaponTechniqueMySet:get_method("doOpen");
+    sdk.hook(doOpen,function(args) 
+        if cfg.enabled and new_quest_initialized then
+            do_open_called = true;
+        end
+        return sdk.PreHookResult.CALL_ORIGINAL;
+    end,function(retval) return retval; end);
+end
 
 local getEquippedActionMySetDataList_args = nil;
 
@@ -361,6 +362,7 @@ re.on_frame(function()
             end
         elseif is_weapon_drawn() ~= nil then -- is_weapon_drawn() ~= nil means player loaded
             -- hook hud, moved here to solve compatibility with (skip intro logos)[https://www.nexusmods.com/monsterhunterrise/mods/1209]
+            hook_doOpen();
             hook_getHUDString();
             hook_getEquippedActionMySetDataList();
             hooked = true;
