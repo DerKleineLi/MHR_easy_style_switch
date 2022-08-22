@@ -30,11 +30,6 @@ cfg.third_scroll = cfg.third_scroll or {}
 for i=1,5 do
     cfg.third_scroll[i] = cfg.third_scroll[i] or 1
 end
--- cfg.switch_action_0 = cfg.switch_action_0 or 0
--- cfg.switch_action_1 = cfg.switch_action_1 or 0
--- cfg.switch_action_2 = cfg.switch_action_2 or 0
--- cfg.switch_action_3 = cfg.switch_action_3 or 0
--- cfg.switch_action_4 = cfg.switch_action_4 or 0
 
 cfg.keyboard_btn = math.floor(cfg.keyboard_btn)
 cfg.keyboard_red = math.floor(cfg.keyboard_red)
@@ -47,11 +42,6 @@ cfg.gamepad_third = math.floor(cfg.gamepad_third)
 for i=1,5 do
     cfg.third_scroll[i] = math.floor(cfg.third_scroll[i])
 end
--- cfg.switch_action_0 = math.floor(cfg.switch_action_0)
--- cfg.switch_action_1 = math.floor(cfg.switch_action_1)
--- cfg.switch_action_2 = math.floor(cfg.switch_action_2)
--- cfg.switch_action_3 = math.floor(cfg.switch_action_3)
--- cfg.switch_action_4 = math.floor(cfg.switch_action_4)
 
 re.on_config_save(
     function()
@@ -68,12 +58,6 @@ local hooked = false; -- indicates whether the functions related to hud are hook
 local new_quest_initialized = false; -- indicates whether the id is set to 0 when entering a new quest or training area.
 local current_weapon = nil; -- [0,13] current weapon type
 local do_open_called = false; -- whether snow.gui.GuiHud_WeaponTechniqueMySet.doOpen() is called and hud need reupdate. 
--- index of the default switch actions
-local base_0 = nil;
-local base_1 = nil;
-local base_2 = nil;
-local base_3 = nil;
-local base_4 = nil;
 
 -- ##########################################
 -- HUD update
@@ -144,15 +128,10 @@ local function switch_Myset(set_id)
         -- switch to third style
         master_player:set_field("_replaceAttackTypeA", cfg.third_scroll[1]-1)
         master_player:set_field("_replaceAttackTypeB", cfg.third_scroll[2]-1)
+        master_player:set_field("_replaceAttackTypeC", (cfg.third_scroll[4]-1)%2)
         master_player:set_field("_replaceAttackTypeD", cfg.third_scroll[3]-1)
         master_player:set_field("_replaceAttackTypeF", cfg.third_scroll[5]-1)
-        if cfg.third_scroll[4] <= 2 then
-            master_player:set_field("_replaceAttackTypeC", cfg.third_scroll[4]-1)
-            master_player:set_field("_replaceAttackTypeE", 0)
-        elseif cfg.third_scroll[4] == 3 then
-            master_player:set_field("_replaceAttackTypeC", 0)
-            master_player:set_field("_replaceAttackTypeE", 1)
-        end
+        master_player:set_field("_replaceAttackTypeE", (cfg.third_scroll[4]-1)//2)
     end
     script_myset_id = set_id;
     update_hud();
@@ -219,32 +198,10 @@ local function hook_getEquippedActionMySetDataList()
         end
         return sdk.PreHookResult.CALL_ORIGINAL;
     end,function(retval) 
-        log.debug("=============")
-        log.debug(sdk.to_int64(getEquippedActionMySetDataList_args[3]))
-        log.debug(sdk.to_int64(getEquippedActionMySetDataList_args[4]))
-        local mmretval = sdk.to_managed_object(retval)
-        log.debug(mmretval[0])
-        log.debug(mmretval[1])
-        log.debug(mmretval[2])
-        log.debug(mmretval[3])
-        log.debug(mmretval[4])
         if cfg.enabled and current_weapon ~= sdk.to_int64(getEquippedActionMySetDataList_args[3]) then
             script_myset_id = 0;
             buff_id = 0;
             switch_weapon_initialized = false;
-            local mretval = sdk.to_managed_object(retval)
-            local player_manager = sdk.get_managed_singleton("snow.player.PlayerManager");
-            local master_player = player_manager:call("findMasterPlayer");
-            if not master_player then return retval end
-            local player_replace_atk_myset_holder = master_player:get_field("_ReplaceAtkMysetHolder");
-            buff_id = player_replace_atk_myset_holder:call("getSelectedIndex");
-            player_replace_atk_myset_holder:call("setSelectedMysetIndex", sdk.to_int64(getEquippedActionMySetDataList_args[4]));
-            base_0 = mretval[0] - player_replace_atk_myset_holder:call("getReplaceAtkTypeFromMyset",0);
-            base_1 = base_0 + 2;
-            base_2 = mretval[2] - player_replace_atk_myset_holder:call("getReplaceAtkTypeFromMyset",3);
-            base_3 = base_1 + 2;
-            base_4 = base_2 + 3;
-            player_replace_atk_myset_holder:call("setSelectedMysetIndex", buff_id);
             current_weapon = sdk.to_int64(getEquippedActionMySetDataList_args[3]);
         end
         return retval
@@ -264,30 +221,6 @@ local function get_corrsponding_action_id_in_third_scroll(action_id)
     if switch_action_slot_id then
         return weapon_actions.id_table[current_weapon+1][switch_action_slot_id][cfg.third_scroll[switch_action_slot_id]]
     end
-
-    -- if not base_0 then return nil end
-    -- local id_in_third_scroll = nil;
-    -- if action_id>= base_0 and action_id<base_1 then
-    --     -- switch action 0
-    --     id_in_third_scroll = base_0 + cfg.switch_action_0;
-    -- elseif action_id>= base_1 and action_id<base_3 then
-    --     -- switch action 1
-    --     id_in_third_scroll = base_1 + cfg.switch_action_1;
-    -- elseif action_id>=base_2 and action_id < base_2+2 then
-    --     -- switch action 2
-    --     id_in_third_scroll = base_2 + cfg.switch_action_2;
-    -- elseif (action_id>=base_3 and action_id<base_3+2) or action_id == base_2+2 then
-    --     -- switch action 3
-    --     if cfg.switch_action_3 <= 1 then
-    --         id_in_third_scroll = base_3 + cfg.switch_action_3;
-    --     elseif cfg.switch_action_3 == 2 then
-    --         id_in_third_scroll = base_2 + 2;
-    --     end
-    -- elseif action_id>=base_4 and action_id < base_4+2 then
-    --     -- switch action 4
-    --     id_in_third_scroll = base_4 + cfg.switch_action_4;
-    -- end
-    -- return id_in_third_scroll;
 end
 
 local function is_weapon_drawn()
@@ -301,10 +234,12 @@ end
 
 -- show action name in third scroll
 local function hook_getHUDString()
-    local DataShortcut = sdk.find_type_definition("snow.data.DataShortcut");
-    local getCommandHud = DataShortcut:get_method("getCommandHud(snow.data.DataDef.PlWeaponActionId)");
-    local getName = DataShortcut:get_method("getName(snow.data.DataDef.PlWeaponActionId)");
-    sdk.hook(getName,function(args)
+    local PlSwitchActionData = sdk.find_type_definition("snow.data.PlSwitchActionData");
+    local get_Name = PlSwitchActionData:get_method("get_Name");
+    local get_CommandHud = PlSwitchActionData:get_method("get_CommandHud");
+    local get_SubtractGage = PlSwitchActionData:get_method("get_SubtractGage");
+
+    sdk.hook(get_Name,function(args)
         if cfg.enabled and script_myset_id == 2 and is_weapon_drawn() then
             local id_in_third_scroll = get_corrsponding_action_id_in_third_scroll(sdk.to_int64(args[2]));
             args[2] = sdk.to_ptr(id_in_third_scroll);
@@ -312,10 +247,22 @@ local function hook_getHUDString()
         return sdk.PreHookResult.CALL_ORIGINAL
     end, function(retval) return retval; end)
 
-    sdk.hook(getCommandHud,function(args)
+    sdk.hook(get_CommandHud,function(args)
         if cfg.enabled and script_myset_id == 2 and is_weapon_drawn() then
             local id_in_third_scroll = get_corrsponding_action_id_in_third_scroll(sdk.to_int64(args[2]));
             args[2] = sdk.to_ptr(id_in_third_scroll);
+        end
+        return sdk.PreHookResult.CALL_ORIGINAL
+    end, function(retval) return retval; end)
+
+    sdk.hook(get_SubtractGage,function(args)
+        if cfg.enabled and script_myset_id == 2 and is_weapon_drawn() then
+            marg2 = sdk.to_managed_object(args[2])
+            local weapon_type = marg2:call("get_WeaponType")
+            local group_id = marg2:call("get_GroupIndexMR")
+            new_marg2 = marg2:call("MemberwiseClone");
+            new_marg2:call("setId(snow.data.DataDef.PlWeaponActionId)", weapon_actions.id_table[weapon_type+1][group_id+1][cfg.third_scroll[group_id+1]]);
+            args[2] = sdk.to_ptr(new_marg2);
         end
         return sdk.PreHookResult.CALL_ORIGINAL
     end, function(retval) return retval; end)
