@@ -52,6 +52,11 @@ re.on_config_save(
 -- ##########################################
 -- global variables
 -- ##########################################
+_ESS_update_flag = _ESS_update_flag or false;
+
+-- ##########################################
+-- mod domain variables
+-- ##########################################
 local script_myset_id = nil; -- {0, 1, 2} the current action set id, 0 for red scroll, 1 for blue scroll, 2 for the third scroll.
 local buff_id = nil; -- {0, 1} the current gui icon id, related to buff, 0 for red scroll, 1 for blue scroll.
 local hooked = false; -- indicates whether the functions related to hud are hooked.
@@ -288,6 +293,11 @@ end
 
 re.on_frame(function()
     if not cfg.enabled then return end
+
+    -- handle external triggers
+    if _ESS_update_flag then
+        _ESS_update_flag = not update_ids();
+    end
 
     -- initialize quest
     if quest_status.in_active_area() then

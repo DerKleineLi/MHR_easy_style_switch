@@ -19,6 +19,9 @@
   - Explanation：详细说明（英文）
 - 推荐设置：关闭动作快捷栏，像但丁一样用十字键切换风格。
 
+### 接口
+见 `easy_style_switch/state_update_api.lua`
+
 ### 开发人员
 
 [Hugo](https://github.com/DerKleineLi) - 主要开发者。
@@ -55,6 +58,9 @@ This mod enables instant scroll-switch. You can also customize a third scroll an
     - Switch skill #: set the #-th switch skill (same order as in-game setting).
   - Explanation：more detailed explanation.
 - Recommended: disable all action bars and use D-pad to switch styles like Dante.
+
+### API
+See `easy_style_switch/state_update_api.lua`.
 
 ### Credits
 
