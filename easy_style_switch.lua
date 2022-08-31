@@ -60,6 +60,19 @@ local current_weapon = nil; -- [0,13] current weapon type
 local do_open_called = false; -- whether snow.gui.GuiHud_WeaponTechniqueMySet.doOpen() is called and hud need reupdate. 
 
 -- ##########################################
+-- helper functions
+-- ##########################################
+local function update_ids()
+    local player_manager = sdk.get_managed_singleton("snow.player.PlayerManager");
+    local master_player = player_manager:call("findMasterPlayer");
+    if not master_player then return false; end
+    local player_replace_atk_myset_holder = master_player:get_field("_ReplaceAtkMysetHolder");
+    buff_id = player_replace_atk_myset_holder:call("getSelectedIndex");
+    script_myset_id = buff_id;
+    return true;
+end
+
+-- ##########################################
 -- HUD update
 -- ##########################################
 local function update_hud()
@@ -199,10 +212,9 @@ local function hook_getEquippedActionMySetDataList()
         return sdk.PreHookResult.CALL_ORIGINAL;
     end,function(retval) 
         if cfg.enabled and current_weapon ~= sdk.to_int64(getEquippedActionMySetDataList_args[3]) then
-            script_myset_id = 0;
-            buff_id = 0;
-            switch_weapon_initialized = false;
-            current_weapon = sdk.to_int64(getEquippedActionMySetDataList_args[3]);
+            if update_ids() then
+                current_weapon = sdk.to_int64(getEquippedActionMySetDataList_args[3]);
+            end
         end
         return retval
     end)
@@ -280,9 +292,7 @@ re.on_frame(function()
     -- initialize quest
     if quest_status.in_active_area() then
         if not new_quest_initialized then
-            script_myset_id = 0;
-            buff_id = 0;
-            new_quest_initialized = true;
+            new_quest_initialized = update_ids();
         end
     else
         new_quest_initialized = false;
