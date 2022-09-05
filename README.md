@@ -68,8 +68,6 @@ See `easy_style_switch/state_update_api.lua`.
 
 [godoakos](https://www.nexusmods.com/monsterhunterrise/users/453968) - creator of [Carve Timer Skip and Fast Return](https://www.nexusmods.com/monsterhunterrise/mods/62) mod, which provides pattern for key binding.
 
-[GreenComfyTea](https://www.nexusmods.com/monsterhunterrise/users/136480908) - creator of [MHR Overlay](https://www.nexusmods.com/monsterhunterrise/mods/50) mod, which shows how to get quest status.
-
 ### Known issue
 
 See issues.
