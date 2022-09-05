@@ -4,10 +4,7 @@ log.info("[easy_style_switch.lua] loaded")
 -- load modules
 -- ##########################################
 local HwKeys = require("easy_style_switch.HwKeys");
-local quest_status = require("easy_style_switch.quest_status");
 local weapon_actions = require("easy_style_switch.weapon_actions");
-
-quest_status.init_module();
 
 -- ##########################################
 -- script config
@@ -62,7 +59,7 @@ local buff_id = nil; -- {0, 1} the current gui icon id, related to buff, 0 for r
 local hooked = false; -- indicates whether the functions related to hud are hooked.
 local new_quest_initialized = false; -- indicates whether the id is set to 0 when entering a new quest or training area.
 local current_weapon = nil; -- [0,13] current weapon type
-local do_open_called = false; -- whether snow.gui.GuiHud_WeaponTechniqueMySet.doOpen() is called and hud need reupdate. 
+local hud_update_flag = false; -- whether hud need reupdate. 
 
 -- ##########################################
 -- helper functions
@@ -78,12 +75,25 @@ local function update_ids()
 end
 
 -- ##########################################
+-- on action set init
+-- ##########################################
+local function hook_on_action_set_init()
+    local PlayerReplaceAtkMysetHolder = sdk.find_type_definition("snow.player.PlayerReplaceAtkMysetHolder");
+    local init = PlayerReplaceAtkMysetHolder:get_method("init")
+    sdk.hook(init, function(args)
+        _ESS_update_flag = cfg.enabled;
+        current_weapon = weapon_actions.player_weapon_type_to_weapon_type[sdk.to_int64(args[3])+1];
+        return sdk.PreHookResult.CALL_ORIGINAL;
+    end, function(retval) return retval; end)
+end
+
+-- ##########################################
 -- HUD update
 -- ##########################################
 local function update_hud()
     local gui_manager = sdk.get_managed_singleton("snow.gui.GuiManager");
     local guiHud_weaponTechniqueMySet = gui_manager:call("get_refGuiHud_WeaponTechniqueMySet");
-    if not guiHud_weaponTechniqueMySet then return end
+    if not guiHud_weaponTechniqueMySet then return false end
     local pnl_scrollicon = guiHud_weaponTechniqueMySet:get_field("pnl_scrollicon");
 
     if buff_id == 0 then
@@ -96,6 +106,7 @@ local function update_hud()
         guiHud_weaponTechniqueMySet:write_dword(0x118, script_myset_id); -- guiHud_weaponTechniqueMySet:get_field("currentEquippedMySetIndex"):set_field("_Value", set_id);
     end
     -- script_myset_id == 2 is handled by hook_getHUDString()
+    return true;
 end
 
 -- ##########################################
@@ -119,8 +130,7 @@ local function switch_Myset(set_id)
             -- change buff
             player_replace_atk_myset_holder:call("setSelectedMysetIndex", set_id);
             buff_id = set_id;
-
-            update_hud();
+            hud_update_flag = true;
             return
         end
         
@@ -152,7 +162,7 @@ local function switch_Myset(set_id)
         master_player:set_field("_replaceAttackTypeE", (cfg.third_scroll[4]-1)//2)
     end
     script_myset_id = set_id;
-    update_hud();
+    hud_update_flag = true;
 end
 
 -- ##########################################
@@ -199,30 +209,10 @@ local function hook_doOpen()
     local doOpen = GuiHud_WeaponTechniqueMySet:get_method("doOpen");
     sdk.hook(doOpen,function(args) 
         if cfg.enabled and new_quest_initialized then
-            do_open_called = true;
+            hud_update_flag = true;
         end
         return sdk.PreHookResult.CALL_ORIGINAL;
     end,function(retval) return retval; end);
-end
-
-local getEquippedActionMySetDataList_args = nil;
-
-local function hook_getEquippedActionMySetDataList()
-    local SwitchActionSystem = sdk.find_type_definition("snow.data.SwitchActionSystem");
-    local getEquippedActionMySetDataList = SwitchActionSystem:get_method("getEquippedActionMySetDataList(snow.data.weapon.WeaponTypes, snow.data.SwitchActionEquipType)");
-    sdk.hook(getEquippedActionMySetDataList,function(args) 
-        if cfg.enabled then
-            getEquippedActionMySetDataList_args = args;
-        end
-        return sdk.PreHookResult.CALL_ORIGINAL;
-    end,function(retval) 
-        if cfg.enabled and current_weapon ~= sdk.to_int64(getEquippedActionMySetDataList_args[3]) then
-            if update_ids() then
-                current_weapon = sdk.to_int64(getEquippedActionMySetDataList_args[3]);
-            end
-        end
-        return retval
-    end)
 end
 
 -- helper functions
@@ -236,6 +226,7 @@ local function get_corrsponding_action_id_in_third_scroll(action_id)
             end
         end
     end
+    log.debug(current_weapon)
     if switch_action_slot_id then
         return weapon_actions.id_table[current_weapon+1][switch_action_slot_id][cfg.third_scroll[switch_action_slot_id]]
     end
@@ -279,7 +270,7 @@ local function hook_getHUDString()
             local weapon_type = marg2:call("get_WeaponType")
             local group_id = marg2:call("get_GroupIndexMR")
             local new_marg2 = marg2:call("MemberwiseClone");
-            new_marg2:call("setId(snow.data.DataDef.PlWeaponActionId)", weapon_actions.id_table[weapon_type+1][group_id+1][cfg.third_scroll[group_id+1]]);
+            new_marg2:call("setId(snow.data.DataDef.PlWeaponActionId)", get_corrsponding_action_id_in_third_scroll(sdk.to_int64(args[2])));
             args[2] = sdk.to_ptr(new_marg2);
         end
         return sdk.PreHookResult.CALL_ORIGINAL
@@ -299,19 +290,9 @@ re.on_frame(function()
         _ESS_update_flag = not update_ids();
     end
 
-    -- initialize quest
-    if quest_status.in_active_area() then
-        if not new_quest_initialized then
-            new_quest_initialized = update_ids();
-        end
-    else
-        new_quest_initialized = false;
-    end
-
     -- update hud
-    if do_open_called then
-        update_hud();
-        do_open_called = false;
+    if hud_update_flag then
+        hud_update_flag = not update_hud();
     end
 
     -- key listening
@@ -329,10 +310,14 @@ re.on_frame(function()
                 switch_Myset(2)
             end
         elseif is_weapon_drawn() ~= nil then -- is_weapon_drawn() ~= nil means player loaded
+            local player_manager = sdk.get_managed_singleton("snow.player.PlayerManager");
+            local master_player = player_manager:call("findMasterPlayer");
+            current_weapon = weapon_actions.player_weapon_type_to_weapon_type[master_player:get_field("_playerWeaponType")+1];
+            
             -- hook hud, moved here to solve compatibility with (skip intro logos)[https://www.nexusmods.com/monsterhunterrise/mods/1209]
             hook_doOpen();
             hook_getHUDString();
-            hook_getEquippedActionMySetDataList();
+            hook_on_action_set_init();
             hooked = true;
         end
     end
