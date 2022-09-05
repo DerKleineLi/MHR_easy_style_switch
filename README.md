@@ -28,8 +28,6 @@
 
 [godoakos](https://www.nexusmods.com/monsterhunterrise/users/453968) - 他开发的 [Carve Timer Skip and Fast Return](https://www.nexusmods.com/monsterhunterrise/mods/62) 提供了按键绑定的框架。
 
-[GreenComfyTea](https://www.nexusmods.com/monsterhunterrise/users/136480908) - 他开发的 [MHR Overlay](https://www.nexusmods.com/monsterhunterrise/mods/50) 提供了判断任务状态的方法。
-
 ### 已知问题
 
 参见 issues 。
@@ -67,8 +65,6 @@ See `easy_style_switch/state_update_api.lua`.
 [Hugo](https://github.com/DerKleineLi) - creator of this mod and its main contributor.
 
 [godoakos](https://www.nexusmods.com/monsterhunterrise/users/453968) - creator of [Carve Timer Skip and Fast Return](https://www.nexusmods.com/monsterhunterrise/mods/62) mod, which provides pattern for key binding.
-
-[GreenComfyTea](https://www.nexusmods.com/monsterhunterrise/users/136480908) - creator of [MHR Overlay](https://www.nexusmods.com/monsterhunterrise/mods/50) mod, which shows how to get quest status.
 
 ### Known issue
 
