@@ -57,7 +57,6 @@ _ESS_update_flag = _ESS_update_flag or false;
 local script_myset_id = nil; -- {0, 1, 2} the current action set id, 0 for red scroll, 1 for blue scroll, 2 for the third scroll.
 local buff_id = nil; -- {0, 1} the current gui icon id, related to buff, 0 for red scroll, 1 for blue scroll.
 local hooked = false; -- indicates whether the functions related to hud are hooked.
-local new_quest_initialized = false; -- indicates whether the id is set to 0 when entering a new quest or training area.
 local current_weapon = nil; -- [0,13] current weapon type
 local hud_update_flag = false; -- whether hud need reupdate. 
 
@@ -171,7 +170,7 @@ end
 local PlayerReplaceAtkMysetHolder = sdk.find_type_definition("snow.player.PlayerReplaceAtkMysetHolder");
 local changeReplaceAtkMyset = PlayerReplaceAtkMysetHolder:get_method("changeReplaceAtkMyset")
 sdk.hook(changeReplaceAtkMyset,function(args)
-    if cfg.enabled and new_quest_initialized then
+    if cfg.enabled then
         if cfg.disable_move_switch then
             return sdk.PreHookResult.SKIP_ORIGINAL
         else
@@ -195,7 +194,7 @@ end,function(retval) return retval; end)
 local PlayerBase = sdk.find_type_definition("snow.player.PlayerBase");
 local reflectReplaceAtkMyset = PlayerBase:get_method("reflectReplaceAtkMyset");
 sdk.hook(reflectReplaceAtkMyset,function(args)
-    if (cfg.disable_move_switch or cfg.separate_buff_and_action_set) and cfg.enabled and new_quest_initialized then
+    if (cfg.disable_move_switch or cfg.separate_buff_and_action_set) and cfg.enabled then
         return sdk.PreHookResult.SKIP_ORIGINAL
     end
     return sdk.PreHookResult.CALL_ORIGINAL
@@ -208,7 +207,7 @@ local function hook_doOpen()
     local GuiHud_WeaponTechniqueMySet = sdk.find_type_definition("snow.gui.GuiHud_WeaponTechniqueMySet");
     local doOpen = GuiHud_WeaponTechniqueMySet:get_method("doOpen");
     sdk.hook(doOpen,function(args) 
-        if cfg.enabled and new_quest_initialized then
+        if cfg.enabled then
             hud_update_flag = true;
         end
         return sdk.PreHookResult.CALL_ORIGINAL;
